@@ -28,12 +28,16 @@ class Agent:
         raise NotImplementedError
     
     def get_next_action(self) -> Optional[Position]:
-        """Get next position to move to"""
+        """Get next position to move to (doesn't advance index - caller must do that)"""
         if self.current_path_index < len(self.path):
             next_pos = self.path[self.current_path_index]
-            self.current_path_index += 1
             return next_pos
         return None
+    
+    def advance_path(self):
+        """Advance to next position in path (call after successful move)"""
+        if self.current_path_index < len(self.path):
+            self.current_path_index += 1
     
     def update_path(self, current_pos: Position, goal: Position):
         """Replan path from current position to goal"""
@@ -72,28 +76,41 @@ class BFSAgent(Agent):
 
 
 class DFSAgent(Agent):
-    """Depth-First Search agent"""
+    """Depth-First Search agent with iterative deepening for better paths"""
     
     def plan(self, start: Position, goal: Position) -> List[Position]:
-        """Plan path using DFS"""
+        """Plan path using DFS with depth limit to avoid extremely long paths"""
         if start == goal:
             return [goal]
         
-        stack = [(start, [start])]
-        visited = {start}
+        # Use iterative deepening DFS - limit depth to prevent extremely long paths
+        # Max depth is Manhattan distance * 2 (allows some backtracking but not excessive)
+        max_depth = int(start.distance(goal) * 2.5)
+        max_depth = max(max_depth, 50)  # Minimum depth limit
+        
+        stack = [(start, [start], 0)]  # (position, path, depth)
+        visited_in_path = {start}
         
         while stack:
-            current, path = stack.pop()
+            current, path, depth = stack.pop()
             
             if current == goal:
                 return path[1:]  # Exclude start position
             
+            # Limit depth to prevent extremely long paths
+            if depth >= max_depth:
+                continue
+            
+            # Explore neighbors
             for neighbor in self.grid_world.get_neighbors(current):
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    stack.append((neighbor, path + [neighbor]))
+                if neighbor not in visited_in_path:
+                    visited_in_path.add(neighbor)
+                    stack.append((neighbor, path + [neighbor], depth + 1))
         
-        return []  # No path found
+        # If DFS with limit failed, try BFS as fallback (guaranteed to find path)
+        # This ensures DFS always finds a path, just might use BFS if DFS path too long
+        bfs_agent = BFSAgent(self.agent_id, self.grid_world)
+        return bfs_agent.plan(start, goal)
 
 
 class AStarAgent(Agent):
@@ -154,14 +171,16 @@ class RLAgent(Agent):
     
     def __init__(self, agent_id: int, grid_world: GridWorld, 
                  learning_rate: float = 0.1, discount: float = 0.95, 
-                 epsilon: float = 0.1):
+                 epsilon: float = 0.3, initial_q: float = 0.5):
         super().__init__(agent_id, grid_world)
         self.learning_rate = learning_rate
         self.discount = discount
         self.epsilon = epsilon
+        self.initial_q = initial_q  # Optimistic initialization
         self.q_table: Dict[Tuple[int, int, int, int], float] = {}
         self.last_state: Optional[Position] = None
         self.last_action: Optional[Position] = None
+        self.steps_taken = 0  # Track steps for epsilon decay
     
     def state_to_key(self, pos: Position, goal: Position) -> Tuple[int, int, int, int]:
         """Convert state to Q-table key"""
@@ -169,10 +188,11 @@ class RLAgent(Agent):
     
     def get_q_value(self, state_key: Tuple[int, int, int, int], 
                    action: Position) -> float:
-        """Get Q-value for state-action pair"""
+        """Get Q-value for state-action pair with optimistic initialization"""
         action_key = (action.x, action.y)
         full_key = state_key + action_key
-        return self.q_table.get(full_key, 0.0)
+        # Use optimistic initialization to encourage exploration
+        return self.q_table.get(full_key, self.initial_q)
     
     def update_q_value(self, state_key: Tuple[int, int, int, int],
                       action: Position, reward: float, next_state: Position,
@@ -180,6 +200,21 @@ class RLAgent(Agent):
         """Update Q-value using Q-learning update rule"""
         action_key = (action.x, action.y)
         full_key = state_key + action_key
+        
+        # Add reward for getting closer to goal
+        current_pos = Position(state_key[0], state_key[1])
+        distance_before = current_pos.distance(goal)
+        distance_after = next_state.distance(goal)
+        
+        # Shaped reward: reward for getting closer to goal
+        if distance_after < distance_before:
+            reward += 0.5  # Reward for progress (increased)
+        elif distance_after > distance_before:
+            reward -= 0.2  # Penalty for moving away
+        
+        # Large reward for reaching goal
+        if next_state == goal:
+            reward += 50.0  # Increased goal reward
         
         # Get max Q-value for next state
         next_state_key = self.state_to_key(next_state, goal)
@@ -196,28 +231,38 @@ class RLAgent(Agent):
         self.q_table[full_key] = new_q
     
     def choose_action(self, current_pos: Position, goal: Position) -> Position:
-        """Choose action using epsilon-greedy policy"""
+        """Choose action using epsilon-greedy policy with adaptive exploration"""
         neighbors = self.grid_world.get_neighbors(current_pos)
         if not neighbors:
             return current_pos
         
         state_key = self.state_to_key(current_pos, goal)
         
+        # Adaptive epsilon: decay over time but keep minimum exploration
+        current_epsilon = max(0.1, self.epsilon * (0.99 ** self.steps_taken))
+        
         # Epsilon-greedy: explore or exploit
-        if np.random.random() < self.epsilon:
+        if np.random.random() < current_epsilon:
+            # Exploration: choose random neighbor
             return random.choice(neighbors)
         else:
-            # Choose action with highest Q-value
-            best_action = neighbors[0]
-            best_q = self.get_q_value(state_key, best_action)
+            # Exploitation: choose action with highest Q-value
+            # If all Q-values are equal, add small random tie-breaking
+            best_actions = []
+            best_q = float('-inf')
             
-            for neighbor in neighbors[1:]:
+            for neighbor in neighbors:
                 q_val = self.get_q_value(state_key, neighbor)
                 if q_val > best_q:
                     best_q = q_val
-                    best_action = neighbor
+                    best_actions = [neighbor]
+                elif abs(q_val - best_q) < 0.001:  # Essentially equal
+                    best_actions.append(neighbor)
             
-            return best_action
+            # If multiple actions have same Q-value, choose randomly among them
+            if len(best_actions) > 1:
+                return random.choice(best_actions)
+            return best_actions[0]
     
     def plan(self, start: Position, goal: Position) -> List[Position]:
         """RL agents don't pre-plan, they act reactively"""

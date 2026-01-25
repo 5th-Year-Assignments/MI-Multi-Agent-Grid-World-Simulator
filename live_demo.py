@@ -59,7 +59,7 @@ def main():
         BFSAgent(0, grid_world),
         DFSAgent(1, grid_world),
         AStarAgent(2, grid_world),
-        RLAgent(3, grid_world, learning_rate=0.1, discount=0.95, epsilon=0.2)
+        RLAgent(3, grid_world, learning_rate=0.2, discount=0.95, epsilon=0.4, initial_q=1.0)
     ]
     
     # Place agents at random positions

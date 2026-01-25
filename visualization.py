@@ -26,6 +26,13 @@ class GridWorldVisualizer:
             CellType.REWARD: 'yellow'
         }
         self.agent_colors = ['red', 'blue', 'orange', 'purple', 'cyan', 'magenta']
+        # Custom colors for specific agent types to avoid confusion
+        self.agent_type_colors = {
+            'BFSAgent': 'red',
+            'DFSAgent': 'blue', 
+            'AStarAgent': 'darkorange',  # Changed from green to avoid confusion with goals
+            'RLAgent': 'purple'
+        }
         
         if live_mode:
             plt.ion()  # Turn on interactive mode
@@ -65,14 +72,53 @@ class GridWorldVisualizer:
         else:
             agent_positions = self.grid_world.agents
         
-        for idx, (agent_id, pos) in enumerate(agent_positions.items()):
-            color_idx = agent_id % len(self.agent_colors)
-            color_map[pos.y][pos.x] = plt.cm.tab10(color_idx)[:3]
-        
-        # Draw goals
-        for goal in self.grid_world.goals:
-            if goal not in agent_positions.values():
+        # Draw agent goals first (so agents can be drawn on top)
+        for agent_id, goal in self.grid_world.agent_goals.items():
+            if goal and goal not in agent_positions.values():
+                # Draw goal as bright green
                 color_map[goal.y][goal.x] = [0, 1, 0]  # Green
+        
+        # Draw other goals (if any)
+        for goal in self.grid_world.goals:
+            if goal not in agent_positions.values() and goal not in self.grid_world.agent_goals.values():
+                color_map[goal.y][goal.x] = [0, 0.7, 0]  # Darker green for unassigned goals
+        
+        # Draw agents (on top of everything)
+        for idx, (agent_id, pos) in enumerate(agent_positions.items()):
+            # Get agent type-specific color if available, otherwise use default
+            agent_type = type(self.simulator.agents[agent_id]).__name__
+            if agent_type in self.agent_type_colors:
+                # Use predefined color for this agent type
+                color_name = self.agent_type_colors[agent_type]
+                if color_name == 'darkorange':
+                    agent_color = [1.0, 0.55, 0.0]  # Dark orange RGB
+                elif color_name == 'red':
+                    agent_color = [1.0, 0.0, 0.0]  # Red
+                elif color_name == 'blue':
+                    agent_color = [0.0, 0.0, 1.0]  # Blue
+                elif color_name == 'purple':
+                    agent_color = [0.5, 0.0, 0.5]  # Purple
+                else:
+                    # Fallback to default color scheme
+                    color_idx = agent_id % len(self.agent_colors)
+                    agent_color = plt.cm.tab10(color_idx)[:3]
+            else:
+                # Fallback to default color scheme
+                color_idx = agent_id % len(self.agent_colors)
+                agent_color = plt.cm.tab10(color_idx)[:3]
+            
+            # Check if agent reached its goal
+            goal = self.grid_world.agent_goals.get(agent_id)
+            if goal and pos == goal:
+                # Agent reached goal - show with special color (bright/glowing effect)
+                # Mix agent color with bright yellow (not green to avoid confusion)
+                color_map[pos.y][pos.x] = [
+                    min(1.0, agent_color[0] + 0.4),
+                    min(1.0, agent_color[1] + 0.4),
+                    max(0.0, agent_color[2] - 0.2)
+                ]
+            else:
+                color_map[pos.y][pos.x] = agent_color
         
         # Draw rewards (only if not occupied by agents)
         for reward_pos in self.grid_world.rewards.keys():
@@ -80,7 +126,18 @@ class GridWorldVisualizer:
                 color_map[reward_pos.y][reward_pos.x] = [1, 1, 0]  # Yellow
         
         self.ax.imshow(color_map, origin='upper', interpolation='nearest')
-        self.ax.set_title(f'Grid World - Step {self.grid_world.step_count}')
+        
+        # Count agents that reached goals
+        reached_count = sum(
+            1 for agent_id in agent_positions.keys()
+            if self.grid_world.agent_reached_goal(agent_id)
+        )
+        total_agents = len(agent_positions)
+        
+        title = f'Grid World - Step {self.grid_world.step_count}'
+        if reached_count > 0:
+            title += f' | {reached_count}/{total_agents} agents reached goals!'
+        self.ax.set_title(title)
         
         # Add grid lines
         self.ax.set_xticks(np.arange(-0.5, width, 1), minor=True)
@@ -96,12 +153,40 @@ class GridWorldVisualizer:
             Patch(facecolor='yellow', label='Reward'),
         ]
         
-        for idx, (agent_id, _) in enumerate(agent_positions.items()):
-            color_idx = agent_id % len(self.agent_colors)
-            color = plt.cm.tab10(color_idx)
+        for idx, (agent_id, pos) in enumerate(agent_positions.items()):
             agent_type = type(self.simulator.agents[agent_id]).__name__
+            
+            # Get the same color used for the agent (matching the visualization)
+            if agent_type in self.agent_type_colors:
+                color_name = self.agent_type_colors[agent_type]
+                if color_name == 'darkorange':
+                    agent_color = [1.0, 0.55, 0.0]  # Dark orange RGB
+                elif color_name == 'red':
+                    agent_color = [1.0, 0.0, 0.0]  # Red
+                elif color_name == 'blue':
+                    agent_color = [0.0, 0.0, 1.0]  # Blue
+                elif color_name == 'purple':
+                    agent_color = [0.5, 0.0, 0.5]  # Purple
+                else:
+                    color_idx = agent_id % len(self.agent_colors)
+                    agent_color = plt.cm.tab10(color_idx)[:3]
+            else:
+                color_idx = agent_id % len(self.agent_colors)
+                agent_color = plt.cm.tab10(color_idx)[:3]
+            
+            # Format agent type name nicely
+            agent_type_display = agent_type.replace('Agent', '').strip()
+            if agent_type_display == 'RL':
+                agent_type_display = 'RL (Q-Learning)'
+            elif agent_type_display == 'AStar':
+                agent_type_display = 'A*'
+            
+            # Check if agent reached goal
+            reached_goal = self.grid_world.agent_reached_goal(agent_id)
+            status = " ✓ GOAL!" if reached_goal else ""
+            
             legend_elements.append(
-                Patch(facecolor=color, label=f'Agent {agent_id} ({agent_type})')
+                Patch(facecolor=agent_color, label=f'{agent_type_display} (Agent {agent_id}){status}')
             )
         
         self.ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
@@ -157,37 +242,55 @@ class GridWorldVisualizer:
         """Plot performance metrics"""
         fig, axes = plt.subplots(2, 2, figsize=(15, 10))
         
-        # Extract data
+        # Extract data and agent names
         agent_ids = list(metrics['agent_metrics'].keys())
+        agent_names = []
+        for agent_id in agent_ids:
+            if agent_id in self.simulator.agents:
+                agent_type = type(self.simulator.agents[agent_id]).__name__
+                # Remove 'Agent' suffix and format nicely
+                name = agent_type.replace('Agent', '').strip()
+                if name == 'RL':
+                    name = 'RL (Q-Learning)'
+                elif name == 'AStar':
+                    name = 'A*'
+                agent_names.append(name)
+            else:
+                agent_names.append(f'Agent {agent_id}')
+        
         success_rates = [m['success_rate'] for m in metrics['agent_metrics'].values()]
         rewards = [m['total_reward'] for m in metrics['agent_metrics'].values()]
         steps = [m['steps_taken'] for m in metrics['agent_metrics'].values()]
         efficiencies = [m['efficiency'] for m in metrics['agent_metrics'].values()]
         
         # Plot 1: Success rates
-        axes[0, 0].bar(agent_ids, success_rates, color='green', alpha=0.7)
+        axes[0, 0].bar(agent_names, success_rates, color='green', alpha=0.7)
         axes[0, 0].set_title('Success Rate by Agent')
-        axes[0, 0].set_xlabel('Agent ID')
+        axes[0, 0].set_xlabel('Agent Type')
         axes[0, 0].set_ylabel('Success Rate')
         axes[0, 0].set_ylim([0, 1.1])
+        axes[0, 0].tick_params(axis='x', rotation=45)
         
         # Plot 2: Total rewards
-        axes[0, 1].bar(agent_ids, rewards, color='blue', alpha=0.7)
+        axes[0, 1].bar(agent_names, rewards, color='blue', alpha=0.7)
         axes[0, 1].set_title('Total Reward by Agent')
-        axes[0, 1].set_xlabel('Agent ID')
+        axes[0, 1].set_xlabel('Agent Type')
         axes[0, 1].set_ylabel('Total Reward')
+        axes[0, 1].tick_params(axis='x', rotation=45)
         
         # Plot 3: Steps taken
-        axes[1, 0].bar(agent_ids, steps, color='orange', alpha=0.7)
+        axes[1, 0].bar(agent_names, steps, color='orange', alpha=0.7)
         axes[1, 0].set_title('Steps Taken by Agent')
-        axes[1, 0].set_xlabel('Agent ID')
+        axes[1, 0].set_xlabel('Agent Type')
         axes[1, 0].set_ylabel('Steps')
+        axes[1, 0].tick_params(axis='x', rotation=45)
         
         # Plot 4: Efficiency (reward per step)
-        axes[1, 1].bar(agent_ids, efficiencies, color='purple', alpha=0.7)
+        axes[1, 1].bar(agent_names, efficiencies, color='purple', alpha=0.7)
         axes[1, 1].set_title('Efficiency (Reward/Step) by Agent')
-        axes[1, 1].set_xlabel('Agent ID')
+        axes[1, 1].set_xlabel('Agent Type')
         axes[1, 1].set_ylabel('Efficiency')
+        axes[1, 1].tick_params(axis='x', rotation=45)
         
         plt.tight_layout()
         

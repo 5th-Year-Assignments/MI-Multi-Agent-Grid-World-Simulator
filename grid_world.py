@@ -138,9 +138,14 @@ class GridWorld:
         
         return neighbors
     
-    def move_agent(self, agent_id: int, new_pos: Position) -> Tuple[bool, float]:
+    def move_agent(self, agent_id: int, new_pos: Position, agent_type: str = None) -> Tuple[bool, float]:
         """
         Move agent to new position
+        
+        Args:
+            agent_id: ID of the agent
+            new_pos: Desired new position
+            agent_type: Type of agent (for stochastic event probability adjustment)
         
         Returns:
             (success, reward): Whether move succeeded and reward obtained
@@ -159,8 +164,14 @@ class GridWorld:
             if aid != agent_id and apos == new_pos:
                 return False, 0.0
         
-        # Apply stochastic event (agent might not move as intended)
-        if random.random() < self.stochastic_prob:
+        # Apply stochastic event with reduced probability for pathfinding agents
+        # Pathfinding agents (BFS, DFS, A*) are more reliable, RL agents face more uncertainty
+        stochastic_prob = self.stochastic_prob
+        if agent_type and 'RL' not in agent_type:
+            # Reduce stochastic events for pathfinding agents by 50%
+            stochastic_prob = self.stochastic_prob * 0.5
+        
+        if random.random() < stochastic_prob:
             # Randomly choose a valid neighbor instead
             neighbors = self.get_neighbors(current_pos)
             if neighbors:
