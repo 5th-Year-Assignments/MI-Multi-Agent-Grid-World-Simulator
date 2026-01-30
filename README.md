@@ -191,5 +191,4 @@ This project is created for educational purposes as part of the Machine Intellig
 
 ## Authors
 
-[Your Group Members]
-
+Heran Eshetu, Iman Ibrahim, Ruhama Yohannes, Samrawit Kahsay, Yordanos Melaku
