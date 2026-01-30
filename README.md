@@ -1,50 +1,55 @@
 # Multi-Agent Grid World Simulator
 
-A comprehensive simulation system for studying multi-agent pathfinding, coordination, and decision-making in dynamic grid environments.
+An integrated simulation framework designed for exploring multi-agent pathfinding strategies, coordination mechanisms, and decision-making behaviors within dynamic grid-based environments.
 
 ## Project Overview
 
-This project implements **Project #2** from the Machine Intelligence course: Multi-Agent Grid World Simulator. The system demonstrates:
+This repository contains the implementation of **Project #2** for the Machine Intelligence course—a Multi-Agent Grid World Simulator. The framework showcases:
 
-- Multiple pathfinding algorithms (BFS, DFS, A*, Reinforcement Learning)
-- Competitive and collaborative multi-agent coordination
-- Stochastic events for uncertainty simulation
-- Performance evaluation and visualization
+- Various pathfinding approaches (BFS, DFS, A*, and Reinforcement Learning)
+- Multi-agent coordination under both competitive and collaborative settings
+- Stochastic event modeling for realistic uncertainty
+- Evaluation of agent performance with built-in visualization tools
 
 ## Features
 
 ### Environment
-- Configurable grid world with obstacles, goals, and rewards
-- Stochastic movement events (simulates uncertainty)
-- Collision detection and handling
+
+- Adjustable grid layout featuring obstacles, goal cells, and reward locations
+- Probabilistic movement events that introduce environmental uncertainty
+- Built-in collision detection and resolution logic
 
 ### Agent Types
-1. **BFS Agent**: Breadth-first search for optimal path length
-2. **DFS Agent**: Depth-first search for memory efficiency
-3. **A* Agent**: Heuristic-based optimal pathfinding
-4. **RL Agent**: Q-learning with epsilon-greedy exploration
+
+1. **BFS Agent** — Uses breadth-first search to find paths with minimal length
+2. **DFS Agent** — Employs depth-first search for memory-efficient exploration
+3. **A* Agent** — Combines heuristics with search for optimal path discovery
+4. **RL Agent** — Learns via Q-learning with an epsilon-greedy exploration policy
 
 ### Coordination Modes
-- **Competitive**: Agents compete for goals and resources
-- **Collaborative**: Agents coordinate for shared objectives
+
+- **Competitive** — Agents pursue individual goals and contend for limited resources
+- **Collaborative** — Agents work together toward common objectives
 
 ### Performance Metrics
-- Success rate (goal achievement)
-- Efficiency (reward per step)
-- Coordination score (conflict avoidance)
-- Total steps and rewards
+
+- Goal attainment rate
+- Efficiency (rewards earned per step)
+- Coordination score (measuring conflict reduction)
+- Cumulative steps and total rewards
 
 ## Installation
 
 ### Requirements
-- Python 3.7+
+
+- Python 3.7 or higher
 - NumPy
 - Matplotlib
 
 ### Setup
 
 ```bash
-# Install dependencies
+# Install required packages
 pip install -r requirements.txt
 ```
 
@@ -52,28 +57,30 @@ pip install -r requirements.txt
 
 ### Running the Demo
 
-**Standard Mode (with static visualizations):**
+**Standard mode** (generates static visualizations):
+
 ```bash
 python main.py
 ```
 
-This will run:
-1. Competitive multi-agent simulation
-2. Collaborative multi-agent simulation
-3. Algorithm comparison study
+The script executes three phases:
+1. A competitive multi-agent scenario
+2. A collaborative multi-agent scenario
+3. An algorithm comparison experiment
 
-**Live Visualization Mode:**
+**Live visualization mode:**
+
 ```bash
 python live_demo.py
 ```
 
-Watch agents move in real-time! The visualization window updates as the simulation runs. You can see:
-- Agents moving step-by-step
-- Rewards being collected
-- Goals being reached
-- Real-time grid updates
+Observe agent behavior as it unfolds. The display refreshes continuously during the run, showing:
+- Step-by-step agent trajectories
+- Reward collection events
+- Goal completion
+- Live grid state updates
 
-The main script also supports live visualization - just answer 'y' when prompted.
+You can also enable live visualization from the main script by responding `y` when asked.
 
 ### Custom Simulations
 
@@ -82,113 +89,19 @@ from grid_world import GridWorld, Position
 from agents import AStarAgent
 from multi_agent_simulator import MultiAgentSimulator
 
-# Create environment
+# Set up the environment
 grid_world = GridWorld(width=20, height=20, obstacle_density=0.15)
 
-# Create simulator
+# Initialize the simulator
 simulator = MultiAgentSimulator(grid_world, coordination_mode="competitive")
 
-# Add agents
+# Register an agent
 agent = AStarAgent(0, grid_world)
 simulator.add_agent(agent, Position(0, 0), Position(19, 19))
 
-# Run simulation
+# Execute the simulation
 metrics = simulator.run(max_steps=500)
 
-# View results
+# Inspect the outcome
 print(f"Success: {metrics['overall']['success_rate']}")
 ```
-
-### Visualization
-
-```python
-from visualization import GridWorldVisualizer
-
-# Create visualizer
-visualizer = GridWorldVisualizer(grid_world, simulator)
-
-# Visualize current state
-visualizer.visualize_state(save_path="grid_state.png")
-
-# Plot performance metrics
-visualizer.plot_metrics(metrics, save_path="metrics.png")
-
-# Animate simulation (requires step_history)
-visualizer.animate_simulation(save_path="animation.gif")
-```
-
-## Project Structure
-
-```
-mi/
-├── grid_world.py              # Grid environment implementation
-├── agents.py                  # Agent algorithms (BFS, DFS, A*, RL)
-├── multi_agent_simulator.py   # Simulation engine and coordination
-├── visualization.py           # Visualization and plotting
-├── main.py                    # Main demo script
-├── live_demo.py               # Live visualization demo
-├── requirements.txt           # Python dependencies
-├── README.md                  # This file
-└── REPORT.md                  # Project report (3-4 pages)
-```
-
-## Key Components
-
-### GridWorld (`grid_world.py`)
-- Manages grid state, obstacles, goals, rewards
-- Handles agent movement and collisions
-- Implements stochastic events
-
-### Agents (`agents.py`)
-- Base `Agent` class with common functionality
-- `BFSAgent`, `DFSAgent`, `AStarAgent` for pathfinding
-- `RLAgent` for reinforcement learning
-
-### MultiAgentSimulator (`multi_agent_simulator.py`)
-- Coordinates multiple agents
-- Handles competitive/collaborative modes
-- Calculates performance metrics
-
-### Visualization (`visualization.py`)
-- Static grid visualization
-- Performance metric plots
-- Animation support
-
-## Configuration
-
-Key parameters can be adjusted:
-
-```python
-GridWorld(
-    width=20,              # Grid width
-    height=20,             # Grid height
-    obstacle_density=0.15, # Probability of obstacle per cell
-    num_goals=3,           # Number of goal cells
-    num_rewards=5,         # Number of reward cells
-    stochastic_prob=0.1    # Probability of stochastic movement
-)
-```
-
-## Results
-
-The simulation generates:
-- Console output with performance metrics
-- `grid_world_final.png`: Final state visualization
-- `performance_metrics.png`: Performance comparison charts
-
-## Deliverables
-
-✅ Grid-world simulation code  
-✅ Agent algorithms (BFS, DFS, A*, RL)  
-✅ Multi-agent coordination  
-✅ Performance evaluation  
-✅ Visualization of agent movements  
-✅ Written report (3-4 pages)
-
-## License
-
-This project is created for educational purposes as part of the Machine Intelligence course.
-
-## Authors
-
-Heran Eshetu, Iman Ibrahim, Ruhama Yohannes, Samrawit Kahsay, Yordanos Melaku
