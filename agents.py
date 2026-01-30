@@ -13,6 +13,8 @@ from grid_world import GridWorld, Position, CellType
 
 class Agent:
     """Base agent class"""
+
+    
     
     def __init__(self, agent_id: int, grid_world: GridWorld):
         self.agent_id = agent_id
