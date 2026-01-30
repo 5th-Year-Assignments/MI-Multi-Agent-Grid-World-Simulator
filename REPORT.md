@@ -3,8 +3,8 @@
 
 **Course:** Machine Intelligence  
 **Project:** #2 - Multi-Agent Grid World Simulator  
-**Group Members:** [Your Group Members]  
-**Date:** [Current Date]
+**Group Members:** [Heran Eshetu, Iman Ibrahim, Ruhama Yohannes, Samrawit Kahsay, Yordanos Melaku]  
+**Date:** [January 30, 2026]
 
 ---
 
