@@ -105,3 +105,36 @@ metrics = simulator.run(max_steps=500)
 # Inspect the outcome
 print(f"Success: {metrics['overall']['success_rate']}")
 ```
+
+### Visualization
+
+```python
+from visualization import GridWorldVisualizer
+
+# Instantiate the visualizer
+visualizer = GridWorldVisualizer(grid_world, simulator)
+
+# Render the current grid state
+visualizer.visualize_state(save_path="grid_state.png")
+
+# Generate metric plots
+visualizer.plot_metrics(metrics, save_path="metrics.png")
+
+# Produce an animation (requires step_history)
+visualizer.animate_simulation(save_path="animation.gif")
+```
+
+## Project Structure
+
+```
+MI-Multi-Agent-Grid-World-Simulator/
+├── grid_world.py              # Grid environment and state management
+├── agents.py                  # Agent implementations (BFS, DFS, A*, RL)
+├── multi_agent_simulator.py   # Simulation logic and coordination
+├── visualization.py           # Plotting and visualization utilities
+├── main.py                    # Primary demo entry point
+├── live_demo.py               # Demo with live visualization
+├── requirements.txt           # Project dependencies
+├── README.md                  # Documentation
+└── REPORT.md                  # Project report (3–4 pages)
+```
