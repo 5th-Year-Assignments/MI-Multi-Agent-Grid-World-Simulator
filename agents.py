@@ -65,14 +65,14 @@ class BFSAgent(Agent):
             current, path = queue.popleft()
             
             if current == goal:
-                return path[1:]  # Exclude start position
+                return path[1:] 
             
             for neighbor in self.grid_world.get_neighbors(current):
                 if neighbor not in visited:
                     visited.add(neighbor)
                     queue.append((neighbor, path + [neighbor]))
         
-        return []  # No path found
+        return []  
 
 
 class DFSAgent(Agent):
@@ -84,7 +84,7 @@ class DFSAgent(Agent):
             return [goal]
         
         # Use iterative deepening DFS - limit depth to prevent extremely long paths
-        # Max depth is Manhattan distance * 2 (allows some backtracking but not excessive)
+        # Max depth is Manhattan distance * 2 
         max_depth = int(start.distance(goal) * 2.5)
         max_depth = max(max_depth, 50)  # Minimum depth limit
         
@@ -163,7 +163,7 @@ class AStarAgent(Agent):
                     heapq.heappush(open_set, (f_score[neighbor], counter, neighbor))
                     counter += 1
         
-        return []  # No path found
+        return []  
 
 
 class RLAgent(Agent):
