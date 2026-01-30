@@ -138,3 +138,75 @@ MI-Multi-Agent-Grid-World-Simulator/
 ├── README.md                  # Documentation
 └── REPORT.md                  # Project report (3–4 pages)
 ```
+
+## Key Components
+
+### GridWorld (`grid_world.py`)
+
+- Maintains grid state, obstacles, goals, and reward cells
+- Processes agent movements and resolves collisions
+- Integrates stochastic event handling
+
+### Agents (`agents.py`)
+
+- Abstract `Agent` base class with shared methods
+- `BFSAgent`, `DFSAgent`, and `AStarAgent` for pathfinding
+- `RLAgent` for reinforcement learning
+
+### MultiAgentSimulator (`multi_agent_simulator.py`)
+
+- Orchestrates multiple agents in a shared environment
+- Supports competitive and collaborative coordination
+- Aggregates and computes performance metrics
+
+### Visualization (`visualization.py`)
+
+- Static grid rendering
+- Metric visualization and charts
+- Animation generation
+
+## Configuration
+
+You can customize the grid world using these parameters:
+
+```python
+GridWorld(
+    width=20,              # Horizontal grid size
+    height=20,             # Vertical grid size
+    obstacle_density=0.15, # Obstacle probability per cell
+    num_goals=3,           # Number of goal positions
+    num_rewards=5,         # Number of reward cells
+    stochastic_prob=0.1    # Chance of stochastic movement
+)
+```
+
+## Results
+
+Running a simulation produces:
+
+- Terminal output with detailed performance statistics
+- `grid_world_final.png` — snapshot of the final grid state
+- `performance_metrics.png` — comparative performance plots
+
+## Deliverables
+
+✅ Grid-world simulation implementation  
+✅ Pathfinding agents (BFS, DFS, A*, RL)  
+✅ Multi-agent coordination logic  
+✅ Performance evaluation framework  
+✅ Agent movement visualization  
+✅ Written report (3–4 pages)
+
+## License
+
+Developed for educational use as part of the Machine Intelligence course.
+
+## Authors
+
+| Group Member    | ID          |
+|-----------------|-------------|
+| Heran Eshetu    | UGR/5016/14 |
+| Iman Ibrahim    | UGR/1004/14 |
+| Ruhama Yohannes | UGR/7382/14 |
+| Samrawit Kahsay | UGR/2271/14 |
+| Yordanos Melaku | UGR/8211/14 |
